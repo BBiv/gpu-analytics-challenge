@@ -176,5 +176,156 @@ def calculate_revenue_for_period(gpu_types, reference_date, days):
 
 @app.route("/api/servers")
 def get_servers():
-    return "<h1>Server Information</h1>"
+    """Returns paginated server data with GPU information and revenue metrics"""
+    try:
+        # Get query parameters for pagination
+        from flask import request
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 50, type=int)
+        
+        # Validate pagination parameters
+        if page < 1:
+            page = 1
+        if per_page < 1 or per_page > 100:
+            per_page = 50
+            
+        return get_paginated_server_data(page, per_page)
+    except Exception as e:
+        logging.error(f"Error in get_servers: {str(e)}")
+        return jsonify({"error": "Internal server error"}), 500
+
+
+def get_paginated_server_data(page, per_page):
+    """Get paginated server data with GPU information and revenue metrics"""
+    try:
+        # Read GPUs data to get server information
+        servers = []
+        gpu_types = {}  # gpu_id -> gpu_type mapping
+        
+        with open("data/gpus_rows.csv", "r", encoding="utf-8") as file:
+            reader = csv.reader(file)
+            next(reader)  # Skip header
+            
+            for row in reader:
+                if len(row) >= 12:  # Ensure row has enough columns
+                    gpu_id = row[0]
+                    server_name = row[5]  # name column
+                    gpu_type = row[10]  # gpu_type column
+                    
+                    if gpu_type and gpu_type != "" and server_name:  # Skip empty values
+                        # Hardcode GPU names for 4090 and 5090 to RTX_XXXX format
+                        if gpu_type in ["4090", "5090"]:
+                            gpu_type = f"RTX_{gpu_type}"
+                        
+                        gpu_types[gpu_id] = gpu_type
+                        
+                        servers.append({
+                            "id": gpu_id,
+                            "name": server_name,
+                            "gpu_type": gpu_type
+                        })
+        
+        # Calculate total count and pages
+        total_count = len(servers)
+        total_pages = (total_count + per_page - 1) // per_page
+        
+        # Apply pagination
+        start_index = (page - 1) * per_page
+        end_index = start_index + per_page
+        paginated_servers = servers[start_index:end_index]
+        
+        # Calculate revenue metrics for each server
+        reference_date = datetime(2025, 8, 5)
+        server_revenue_7d = calculate_server_revenue_for_period(gpu_types, reference_date, 7)
+        server_revenue_30d = calculate_server_revenue_for_period(gpu_types, reference_date, 30)
+        server_total_earnings = calculate_server_total_earnings(gpu_types)
+        
+        # Add revenue data to each server
+        for server in paginated_servers:
+            gpu_id = server["id"]
+            server["revenue_7d"] = round(server_revenue_7d.get(gpu_id, 0.0), 2)
+            server["revenue_30d"] = round(server_revenue_30d.get(gpu_id, 0.0), 2)
+            server["total_earnings"] = round(server_total_earnings.get(gpu_id, 0.0), 2)
+        
+        return {
+            "data": paginated_servers,
+            "pagination": {
+                "page": page,
+                "total_pages": total_pages,
+                "total_count": total_count
+            }
+        }
+        
+    except FileNotFoundError as e:
+        logging.error(f"File not found: {str(e)}")
+        return jsonify({"error": "Data file not found"}), 404
+    except Exception as e:
+        logging.error(f"Error processing server data: {str(e)}")
+        return jsonify({"error": "Error processing server data"}), 500
+
+
+def calculate_server_revenue_for_period(gpu_types, reference_date, days):
+    """Calculate revenue for a specific period for each GPU/server"""
+    period_start = reference_date - timedelta(days=days)
+    
+    # Initialize revenue tracking for each GPU
+    gpu_revenue = {gpu_id: 0.0 for gpu_id in gpu_types.keys()}
+    
+    try:
+        with open("data/gpu_daily_earnings_rows.csv", "r", encoding="utf-8") as file:
+            reader = csv.reader(file)
+            next(reader)  # Skip header
+            
+            for row in reader:
+                if len(row) >= 3:  # Ensure row has enough columns
+                    gpu_id = row[0]
+                    earning_date_str = row[1]
+                    gpu_amount = float(row[2])
+                    
+                    # Check if this GPU exists in our mapping
+                    if gpu_id in gpu_types:
+                        try:
+                            earning_date = datetime.strptime(earning_date_str, "%Y-%m-%d")
+                            
+                            # Calculate revenue for the specified period
+                            if earning_date >= period_start:
+                                gpu_revenue[gpu_id] += gpu_amount
+                                
+                        except ValueError:
+                            # Skip invalid date formats
+                            continue
+                            
+    except Exception as e:
+        logging.error(f"Error calculating server revenue for {days} days: {str(e)}")
+        # Return empty revenue dict on error
+        return {gpu_id: 0.0 for gpu_id in gpu_types.keys()}
+    
+    return gpu_revenue
+
+
+def calculate_server_total_earnings(gpu_types):
+    """Calculate total earnings for each GPU/server"""
+    # Initialize earnings tracking for each GPU
+    gpu_total_earnings = {gpu_id: 0.0 for gpu_id in gpu_types.keys()}
+    
+    try:
+        with open("data/gpu_daily_earnings_rows.csv", "r", encoding="utf-8") as file:
+            reader = csv.reader(file)
+            next(reader)  # Skip header
+            
+            for row in reader:
+                if len(row) >= 3:  # Ensure row has enough columns
+                    gpu_id = row[0]
+                    gpu_amount = float(row[2])
+                    
+                    # Check if this GPU exists in our mapping
+                    if gpu_id in gpu_types:
+                        gpu_total_earnings[gpu_id] += gpu_amount
+                            
+    except Exception as e:
+        logging.error(f"Error calculating server total earnings: {str(e)}")
+        # Return empty earnings dict on error
+        return {gpu_id: 0.0 for gpu_id in gpu_types.keys()}
+    
+    return gpu_total_earnings
 
