@@ -1,9 +1,11 @@
 import csv
 from flask import Flask, jsonify
+from flask_cors import CORS
 import logging
 from datetime import datetime, timedelta
 
 app = Flask(__name__)
+CORS(app)  # Enable CORS for all routes
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
