@@ -1,23 +1,20 @@
 import { useState } from 'react'
-import ARRChart from './components/ARRChart.jsx'
 import './App.css'
 import './index.css'
+import ARRChart from './components/ARRChart.jsx'
+import ServerTable from './components/ServerTable.jsx'
 
 function App() {
   return (
     <div >
-      <div className="labels-and-dropdown">
-        <p>Time-based Analytics</p>
-      </div>
-      
       <div className="ARR-chart">
         <ARRChart />
       </div>
-      <div className="gpu-performance-chart">
-        <p>Space for GPU PERFORMANCE</p>
+      <div className="ARR-chart">
+        <p>*^-^*</p>
       </div>
       <div className="server-data-chart">
-        <p>Space for SERVER DATA</p>
+        <ServerTable />
       </div>
     </div>
   )

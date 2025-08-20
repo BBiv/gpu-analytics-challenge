@@ -17,8 +17,8 @@ const ARRChart = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64 bg-gray-50 rounded-lg">
-        <div className="text-gray-500">Loading ARR data...</div>
+      <div className="flex items-center justify-center h-64 bg-gray-700 rounded-lg">
+        <div className="text-white-500">Loading ARR data...</div>
       </div>
     );
   }
@@ -42,8 +42,8 @@ const ARRChart = () => {
 
   if (!arrData?.data || arrData.data.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64 bg-gray-50 rounded-lg">
-        <div className="text-gray-500">No ARR data available</div>
+      <div className="flex items-center justify-center h-64 bg-gray-700 rounded-lg">
+        <div className="text-white-500">No ARR data available</div>
       </div>
     );
   }
@@ -69,7 +69,7 @@ const ARRChart = () => {
   };
 
   return (
-    <div className="w-[80vw] h-[25vw] bg-gray rounded-lg border border-gray-500/50 pt-5 px-3">
+    <div className="w-[80vw] h-[25vw] bg-neutral-900 rounded-lg border border-gray-700/50 pt-5 px-3">
       <p className="mb-1 text-left pl-20">ARR</p>
       
       <ResponsiveContainer width="100%" height="90%">

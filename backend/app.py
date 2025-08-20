@@ -11,9 +11,9 @@ CORS(app)  # Enable CORS for all routes
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-@app.route("/")
+@app.route("/dashboard")
 def default():
-    return "<h1>Home page text</h1>"
+    return "<h1>Dashboard page text</h1>"
 
 
 @app.route("/api/arr-data")
@@ -211,6 +211,7 @@ def get_paginated_server_data(page, per_page):
             for row in reader:
                 if len(row) >= 12:  # Ensure row has enough columns
                     gpu_id = row[0]
+                    server_id = row[1]
                     server_name = row[5]  # name column
                     gpu_type = row[10]  # gpu_type column
                     
@@ -222,8 +223,9 @@ def get_paginated_server_data(page, per_page):
                         gpu_types[gpu_id] = gpu_type
                         
                         servers.append({
-                            "id": gpu_id,
+                            "server_id": server_id,
                             "name": server_name,
+                            "gpu_id": gpu_id,
                             "gpu_type": gpu_type
                         })
         
@@ -244,7 +246,7 @@ def get_paginated_server_data(page, per_page):
         
         # Add revenue data to each server
         for server in paginated_servers:
-            gpu_id = server["id"]
+            gpu_id = server["gpu_id"]
             server["revenue_7d"] = round(server_revenue_7d.get(gpu_id, 0.0), 2)
             server["revenue_30d"] = round(server_revenue_30d.get(gpu_id, 0.0), 2)
             server["total_earnings"] = round(server_total_earnings.get(gpu_id, 0.0), 2)
